@@ -12,12 +12,18 @@ int main() {
 
     const int tamanhoTabuleiro = 10;
     const int tamanhoNavio = 3;
+    const int tamanhoHabilidade = 5;
 
     int tabuleiro[10][10];
+
     int navioHorizontal[3] = {3, 3, 3};
     int navioVertical[3] = {3, 3, 3};
     int navioDiagonalPrincipal[3] = {3, 3, 3};
     int navioDiagonalSecundaria[3] = {3, 3, 3};
+
+    int cone[5][5];
+    int cruz[5][5];
+    int octaedro[5][5];
 
     int linha;
     int coluna;
@@ -36,6 +42,16 @@ int main() {
 
     int linhaDiagonalSecundaria = 6;
     int colunaDiagonalSecundaria = 2;
+
+    // Pontos de origem das habilidades no tabuleiro
+    int origemConeLinha = 1;
+    int origemConeColuna = 1;
+
+    int origemCruzLinha = 4;
+    int origemCruzColuna = 4;
+
+    int origemOctaedroLinha = 7;
+    int origemOctaedroColuna = 7;
 
     // Inicializa o tabuleiro com 0, representando água
     for (linha = 0; linha < tamanhoTabuleiro; linha++) {
@@ -66,26 +82,14 @@ int main() {
         posicaoValida = 0;
     }
 
-    // Valida se o navio horizontal não irá se sobrepor a outro navio
-    for (posicao = 0; posicao < tamanhoNavio; posicao++) {
-        if (tabuleiro[linhaNavioHorizontal][colunaNavioHorizontal + posicao] != 0) {
-            posicaoValida = 0;
-        }
-    }
-
-    // Valida se o navio vertical não irá se sobrepor a outro navio
-    for (posicao = 0; posicao < tamanhoNavio; posicao++) {
-        if (tabuleiro[linhaNavioVertical + posicao][colunaNavioVertical] != 0) {
-            posicaoValida = 0;
-        }
-    }
-
-    // Como o tabuleiro ainda está vazio, os próximos testes ajudam a manter a lógica organizada.
-    // A sobreposição real também será conferida antes de posicionar cada navio.
     if (posicaoValida == 1) {
         // Posiciona o navio horizontal copiando os valores do vetor para a matriz
         for (posicao = 0; posicao < tamanhoNavio; posicao++) {
-            tabuleiro[linhaNavioHorizontal][colunaNavioHorizontal + posicao] = navioHorizontal[posicao];
+            if (tabuleiro[linhaNavioHorizontal][colunaNavioHorizontal + posicao] == 0) {
+                tabuleiro[linhaNavioHorizontal][colunaNavioHorizontal + posicao] = navioHorizontal[posicao];
+            } else {
+                posicaoValida = 0;
+            }
         }
 
         // Posiciona o navio vertical copiando os valores do vetor para a matriz
@@ -117,39 +121,122 @@ int main() {
             }
         }
 
+        // Cria as matrizes das habilidades usando loops aninhados e condicionais.
+        for (linha = 0; linha < tamanhoHabilidade; linha++) {
+            for (coluna = 0; coluna < tamanhoHabilidade; coluna++) {
+                // Inicializa todas as posições como não afetadas
+                cone[linha][coluna] = 0;
+                cruz[linha][coluna] = 0;
+                octaedro[linha][coluna] = 0;
+
+                // Habilidade Cone:
+                // A área começa no topo central e aumenta para baixo.
+                if (coluna >= 2 - linha && coluna <= 2 + linha) {
+                    cone[linha][coluna] = 1;
+                }
+
+                // Habilidade Cruz:
+                // Afeta a linha central e a coluna central.
+                if (linha == 2 || coluna == 2) {
+                    cruz[linha][coluna] = 1;
+                }
+
+                // Habilidade Octaedro:
+                // Forma um losango usando a distância do centro.
+                if ((linha - 2) * (linha - 2) + (coluna - 2) * (coluna - 2) <= 4) {
+                    if (linha == 2 || coluna == 2 || 
+                        (linha == 1 && coluna >= 1 && coluna <= 3) ||
+                        (linha == 3 && coluna >= 1 && coluna <= 3)) {
+                        octaedro[linha][coluna] = 1;
+                    }
+                }
+            }
+        }
+
+        // Sobrepõe a habilidade Cone ao tabuleiro.
+        // O valor 5 representa uma área atingida pela habilidade.
+        for (linha = 0; linha < tamanhoHabilidade; linha++) {
+            for (coluna = 0; coluna < tamanhoHabilidade; coluna++) {
+                int linhaTabuleiro = origemConeLinha + linha - 2;
+                int colunaTabuleiro = origemConeColuna + coluna - 2;
+
+                if (cone[linha][coluna] == 1 &&
+                    linhaTabuleiro >= 0 && linhaTabuleiro < tamanhoTabuleiro &&
+                    colunaTabuleiro >= 0 && colunaTabuleiro < tamanhoTabuleiro) {
+
+                    if (tabuleiro[linhaTabuleiro][colunaTabuleiro] == 0) {
+                        tabuleiro[linhaTabuleiro][colunaTabuleiro] = 5;
+                    }
+                }
+            }
+        }
+
+        // Sobrepõe a habilidade Cruz ao tabuleiro.
+        for (linha = 0; linha < tamanhoHabilidade; linha++) {
+            for (coluna = 0; coluna < tamanhoHabilidade; coluna++) {
+                int linhaTabuleiro = origemCruzLinha + linha - 2;
+                int colunaTabuleiro = origemCruzColuna + coluna - 2;
+
+                if (cruz[linha][coluna] == 1 &&
+                    linhaTabuleiro >= 0 && linhaTabuleiro < tamanhoTabuleiro &&
+                    colunaTabuleiro >= 0 && colunaTabuleiro < tamanhoTabuleiro) {
+
+                    if (tabuleiro[linhaTabuleiro][colunaTabuleiro] == 0) {
+                        tabuleiro[linhaTabuleiro][colunaTabuleiro] = 5;
+                    }
+                }
+            }
+        }
+
+        // Sobrepõe a habilidade Octaedro ao tabuleiro.
+        for (linha = 0; linha < tamanhoHabilidade; linha++) {
+            for (coluna = 0; coluna < tamanhoHabilidade; coluna++) {
+                int linhaTabuleiro = origemOctaedroLinha + linha - 2;
+                int colunaTabuleiro = origemOctaedroColuna + coluna - 2;
+
+                if (octaedro[linha][coluna] == 1 &&
+                    linhaTabuleiro >= 0 && linhaTabuleiro < tamanhoTabuleiro &&
+                    colunaTabuleiro >= 0 && colunaTabuleiro < tamanhoTabuleiro) {
+
+                    if (tabuleiro[linhaTabuleiro][colunaTabuleiro] == 0) {
+                        tabuleiro[linhaTabuleiro][colunaTabuleiro] = 5;
+                    }
+                }
+            }
+        }
+
         if (posicaoValida == 1) {
-            printf("Coordenadas do Navio Horizontal:\n");
-            for (posicao = 0; posicao < tamanhoNavio; posicao++) {
-                printf("Linha: %d, Coluna: %d\n", linhaNavioHorizontal, colunaNavioHorizontal + posicao);
-            }
+            printf("Tabuleiro com Navios e Habilidades:\n\n");
 
-            printf("\n");
-
-            printf("Coordenadas do Navio Vertical:\n");
-            for (posicao = 0; posicao < tamanhoNavio; posicao++) {
-                printf("Linha: %d, Coluna: %d\n", linhaNavioVertical + posicao, colunaNavioVertical);
-            }
-
-            printf("\n");
-
-            printf("Coordenadas do Navio Diagonal Principal:\n");
-            for (posicao = 0; posicao < tamanhoNavio; posicao++) {
-                printf("Linha: %d, Coluna: %d\n", linhaDiagonalPrincipal + posicao, colunaDiagonalPrincipal + posicao);
-            }
-
-            printf("\n");
-
-            printf("Coordenadas do Navio Diagonal Secundaria:\n");
-            for (posicao = 0; posicao < tamanhoNavio; posicao++) {
-                printf("Linha: %d, Coluna: %d\n", linhaDiagonalSecundaria + posicao, colunaDiagonalSecundaria - posicao);
-            }
-
-            printf("\nTabuleiro:\n");
-
-            // Exibe o tabuleiro completo usando loops aninhados
+            // Exibe o tabuleiro completo usando loops aninhados.
+            // 0 representa água, 3 representa navio e 5 representa área afetada.
             for (linha = 0; linha < tamanhoTabuleiro; linha++) {
                 for (coluna = 0; coluna < tamanhoTabuleiro; coluna++) {
                     printf("%d ", tabuleiro[linha][coluna]);
+                }
+                printf("\n");
+            }
+
+            printf("\nMatriz da Habilidade Cone:\n");
+            for (linha = 0; linha < tamanhoHabilidade; linha++) {
+                for (coluna = 0; coluna < tamanhoHabilidade; coluna++) {
+                    printf("%d ", cone[linha][coluna]);
+                }
+                printf("\n");
+            }
+
+            printf("\nMatriz da Habilidade Cruz:\n");
+            for (linha = 0; linha < tamanhoHabilidade; linha++) {
+                for (coluna = 0; coluna < tamanhoHabilidade; coluna++) {
+                    printf("%d ", cruz[linha][coluna]);
+                }
+                printf("\n");
+            }
+
+            printf("\nMatriz da Habilidade Octaedro:\n");
+            for (linha = 0; linha < tamanhoHabilidade; linha++) {
+                for (coluna = 0; coluna < tamanhoHabilidade; coluna++) {
+                    printf("%d ", octaedro[linha][coluna]);
                 }
                 printf("\n");
             }
@@ -159,27 +246,6 @@ int main() {
     } else {
         printf("Erro: posicionamento invalido dos navios.\n");
     }
-
-    // Nível Mestre - Habilidades Especiais com Matrizes
-    // Sugestão: Crie matrizes para representar habilidades especiais como cone, cruz, e octaedro.
-    // Sugestão: Utilize estruturas de repetição aninhadas para preencher as áreas afetadas por essas habilidades no tabuleiro.
-    // Sugestão: Exiba o tabuleiro com as áreas afetadas, utilizando 0 para áreas não afetadas e 1 para áreas atingidas.
-
-    // Exemplos de exibição das habilidades:
-    // Exemplo para habilidade em cone:
-    // 0 0 1 0 0
-    // 0 1 1 1 0
-    // 1 1 1 1 1
-    
-    // Exemplo para habilidade em octaedro:
-    // 0 0 1 0 0
-    // 0 1 1 1 0
-    // 0 0 1 0 0
-
-    // Exemplo para habilidade em cruz:
-    // 0 0 1 0 0
-    // 1 1 1 1 1
-    // 0 0 1 0 0
 
     return 0;
 }
